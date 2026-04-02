@@ -1,0 +1,27 @@
+# Video / output / input
+*.avi
+*.mp4
+output_videos/
+runs/
+input_videos/
+
+# Dataset
+data/
+datasets/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.env/
+
+# OS files
+.DS_Store
+Thumbs.db
