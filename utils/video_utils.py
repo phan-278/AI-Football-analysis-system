@@ -12,7 +12,7 @@ def read_video(video_path):
     return frames
 
 #Save Next Video with
-def get_next_video_name(output_dir="output_videos", prefix="attempt", ext=".avi"):
+def get_next_video_name(output_dir="output_videos", prefix="run", ext=".avi"):
     os.makedirs(output_dir, exist_ok=True)
 
     files = os.listdir(output_dir)
