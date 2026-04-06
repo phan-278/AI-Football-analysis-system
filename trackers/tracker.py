@@ -6,7 +6,6 @@ import numpy as np
 import sys
 from utils import get_width_of_bbox, get_center_of_bbox
 import cv2
-
 sys.path.append('../')
 
 class Tracker:
@@ -117,7 +116,7 @@ class Tracker:
             cv2.rectangle(frame,
                           (int(x1_rect), int(y1_rect)),
                           (int(x2_rect),int(y2_rect)),
-                          (0,255,0),
+                          color,
                           cv2.FILLED)
         
             x1_text = x1_rect +12
@@ -163,7 +162,8 @@ class Tracker:
 
             #Draw Player
             for track_id,player in player_dict.items():
-                frame =  self.draw_ellipse(frame, player['bbox'],(0,0,255),track_id)
+                color = player.get('team_color',(0,0,255))
+                frame =  self.draw_ellipse(frame, player['bbox'],color,track_id)
             
             for _,referee in referee_dict.items():
                 frame =  self.draw_ellipse(frame, referee['bbox'],(0,255,255))
