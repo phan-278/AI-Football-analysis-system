@@ -4,4 +4,7 @@ def get_center_of_bbox(bbox):
 
 def get_width_of_bbox(bbox):
     x1,y1,x2,y2 = bbox
-    return x2-x1
+    return abs(x2-x1)
+
+def measure_distance(bbox1,bbox2):
+    return ((bbox1[0]-bbox2[0])**2+(bbox1[1]-bbox2[1])**2)**0.5

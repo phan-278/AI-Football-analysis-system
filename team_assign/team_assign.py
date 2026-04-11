@@ -7,19 +7,21 @@ class TeamAssign:
 
     def get_clustering_model(self, image):
         
-        # Reshape image into 2D array
-        image_2d = image.reshape(-1,3)
+        # Reshape image into array
+        img = image.reshape(-1,3)
 
         # Preform K-means with 2 clusters
         kmeans = KMeans(n_clusters=2,init='k-means++',n_init=1)
-        kmeans.fit(image_2d)
+        kmeans.fit(img)
 
         return kmeans
 
 
     def get_player_color(self, frame,bbox):
+        # Get the player image
         image = frame[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2])]
 
+        # Take the shirt partern from player
         shirt = image[0: int (image.shape[0]/2),:]
         
         # Get cluster model (KMeans)
@@ -55,7 +57,7 @@ class TeamAssign:
         self.team_colors[1] = kmeans.cluster_centers_[0]
         self.team_colors[2] = kmeans.cluster_centers_[1]
 
-    def get_player_team(self, frame, player_bbox,player_id):
+    def assign_player_into_team(self, frame,player_bbox,player_id):
         if player_id in self.player_team_dict:
             return self.player_team_dict[player_id]
         

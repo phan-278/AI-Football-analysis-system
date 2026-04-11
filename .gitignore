@@ -4,13 +4,15 @@
 output_videos/
 runs/
 input_videos/
-
+models/
+training/
 # Dataset
 data/
 datasets/
 
 # Model weights
-*.pt
+best_yolov5su.pt
+best_yolo26s.pt
 *.pth
 *.onnx
 
