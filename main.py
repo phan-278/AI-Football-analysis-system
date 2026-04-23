@@ -22,15 +22,21 @@ def main():
     tracks = tracker.get_object_tracks(video_frames,
                                        read_from_stub=True,
                                        stub_path='stubs/track_stubs.pkl')
-
+    
     # Interpolate Ball Positions
     tracks['ball'] = tracker.interpolate_ball_positions(tracks['ball'])
+
+    # Get object position
+    tracker.add_position_to_track(tracks)
 
     # camera movement estimator
     camera_movement_estimator = CameraMovementEstimator(video_frames[0])
     camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
                                                                               read_from_stub = True,
                                                                               stub_path = 'stubs/camera_movement.pkl')
+
+    # Adjust object position
+    camera_movement_estimator.add_adjust_position_to_track(tracks,camera_movement_per_frame)
 
     # Assign Player Teams
     team_assigner = TeamAssign()
