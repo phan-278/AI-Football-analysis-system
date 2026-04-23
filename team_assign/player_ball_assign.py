@@ -21,9 +21,6 @@ class PlayerBallAssign():
             distance_right = measure_distance((player_bbox[2],player_bbox[-1]),ball_positions)
             distance = min(distance_left,distance_right)
 
-            if distance < 70: # Chỉ in ra những người ở tương đối gần bóng để đỡ rối màn hình
-                print(f"Cầu thủ ID: {player_id} | Khoảng cách tới bóng: {distance}")
-
             if distance < self.max_player_ball_distance:
                 if distance < min_distance:
                     min_distance = distance

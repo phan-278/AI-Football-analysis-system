@@ -4,7 +4,7 @@ from ultralytics import YOLO
 import cv2
 from team_assign import TeamAssign, PlayerBallAssign
 import numpy as np
-
+from camera_movement_estimator import CameraMovementEstimator
 
 
 
@@ -25,6 +25,12 @@ def main():
 
     # Interpolate Ball Positions
     tracks['ball'] = tracker.interpolate_ball_positions(tracks['ball'])
+
+    # camera movement estimator
+    camera_movement_estimator = CameraMovementEstimator(video_frames[0])
+    camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
+                                                                              read_from_stub = True,
+                                                                              stub_path = 'stubs/camera_movement.pkl')
 
     # Assign Player Teams
     team_assigner = TeamAssign()
@@ -57,9 +63,13 @@ def main():
                 team_ball_control.append(2)
     team_ball_control = np.array(team_ball_control)
 
-    #Draw ouput objects tracked
+    # Draw ouput
+    ## Draw ouput objects tracked
     output_video_frames = tracker.draw_annotations(video_frames,tracks,team_ball_control)
 
+    ## Draw camera movemet
+    output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames,camera_movement_per_frame)
+    
     #Save video
     save_video(output_video_frames,output_dir=output_video)
 

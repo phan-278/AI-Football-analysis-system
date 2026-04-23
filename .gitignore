@@ -1,6 +1,7 @@
 # Video / output / input
 *.avi
 *.mp4
+*.pkl
 output_videos/
 runs/
 input_videos/

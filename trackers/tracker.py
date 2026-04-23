@@ -129,7 +129,7 @@ class Tracker:
                           color,
                           cv2.FILLED)
         
-            x1_text = x1_rect +12
+            x1_text = x1_rect + 12
             if track_id > 99:
                 x1_text-=10
             
