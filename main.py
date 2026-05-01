@@ -5,7 +5,7 @@ import cv2
 from team_assign import TeamAssign, PlayerBallAssign
 import numpy as np
 from camera_movement_estimator import CameraMovementEstimator
-
+from view_tranformer import ViewTransformer
 
 
 def main():
@@ -37,6 +37,10 @@ def main():
 
     # Adjust object position
     camera_movement_estimator.add_adjust_position_to_track(tracks,camera_movement_per_frame)
+
+    #Add real position
+    view_transformer = ViewTransformer()
+    
 
     # Assign Player Teams
     team_assigner = TeamAssign()
