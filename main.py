@@ -6,7 +6,7 @@ from team_assign import TeamAssign, PlayerBallAssign
 import numpy as np
 from camera_movement_estimator import CameraMovementEstimator
 from view_tranformer import ViewTransformer
-
+from speed_estimator import SpeedAndDistance_Estimator
 
 def main():
 
@@ -40,7 +40,11 @@ def main():
 
     #Add real position
     view_transformer = ViewTransformer()
-    
+    view_transformer.add_transformed_position_to_tracks(tracks)
+
+    # Speed and distance estimator
+    speed_and_distance_estimator = SpeedAndDistance_Estimator()
+    speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
 
     # Assign Player Teams
     team_assigner = TeamAssign()
