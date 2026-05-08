@@ -28,7 +28,7 @@ class CameraMovementEstimator():
             mask = mask_features
         )
 
-    def add_adjust_position_to_track(self,tracks,camera_movement_per_frame):
+    def add_adjust_position_to_tracks(self,tracks,camera_movement_per_frame):
         for object, object_tracks in tracks.items():
             for frame_num, track in enumerate(object_tracks):
                 for track_id,track_info in track.items():
@@ -93,8 +93,8 @@ class CameraMovementEstimator():
             cv2.addWeighted(overlay,alpha,frame,1-alpha,0,frame)
 
             x_movement,y_movement = camera_movement_per_frame[frame_num]
-            frame  = cv2.putText(frame,f"Camera movement X: {x_movement:.2f}",(10,30),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0))
-            frame  = cv2.putText(frame,f"Camera movement Y: {y_movement:.2f}",(10,60),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0))
+            frame  = cv2.putText(frame,f"Camera movement X: {x_movement:.2f}",(10,30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,0))
+            frame  = cv2.putText(frame,f"Camera movement Y: {y_movement:.2f}",(10,60),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,0))
 
             output_frames.append(frame)
 

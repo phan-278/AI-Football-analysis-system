@@ -1,19 +1,14 @@
 # Video / output / input
 *.avi
-*.mp4
-*.pkl
+git*.pkl
 output_videos/
 runs/
-input_videos/
-models/
 training/
 # Dataset
 data/
 datasets/
 
 # Model weights
-best_yolov5su.pt
-best_yolo26s.pt
 *.pth
 *.onnx
 
