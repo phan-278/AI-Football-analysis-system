@@ -1,18 +1,17 @@
 # AI-Football-analysis-system
 football_analysis/
 │
-├── main.py
-│   # Orchestrate toàn bộ pipeline mới
-│
-├── yolo_inference.py
+├── main.py         chạy code
 ├── README.md
 ├── .gitignore
 │
 ├── trackers/
 │   ├── __init__.py
-│   └── tracker.py
-│       # ByteTrack → StrongSORT + OSNet
-│
+│   └── tracker.py  # ByteTrack  
+│       
+├── reid/
+│   ├── __init__.py
+|   └── reid.py     OSNet
 ├── homography/              ★ module mới
 │   ├── __init__.py
 │   ├── keypoint_detector.py
@@ -83,9 +82,6 @@ football_analysis/
 │       # Cache H matrix toàn video
 │
 └── outputs/                 ★ thư mục mới
-    ├── heatmaps/
-    │   ├── player_1.png
-    │   └── team1_combined.png
     │
     ├── match_stats.json     # Data contract → NLP
     └── tactical_report.pdf

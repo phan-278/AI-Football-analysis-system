@@ -1,0 +1,41 @@
+# Antigravity Ignore File
+# Dành riêng cho dự án AI Football Analysis System
+
+# --- Python & Environment ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# --- Weights & Models (Tránh quét các file binary nặng) ---
+*.pt
+*.pth
+*.weights
+*.onnx
+*.pb
+*.tflite
+models/
+
+# --- Video & Data (Dữ liệu media nặng) ---
+*.mp4
+*.avi
+*.mkv
+*.mov
+datasets/
+data/
+output_videos/
+runs/
+temp/
+
+# --- IDE & Logs ---
+.vscode/
+.idea/
+*.log
+logs/
+
+# --- OS specific ---
+.DS_Store
+Thumbs.db

@@ -7,13 +7,14 @@ import numpy as np
 from camera_movement_estimator import CameraMovementEstimator
 from view_tranformer import ViewTransformer
 from speed_estimator import SpeedAndDistance_Estimator
-from reid_model import ReID
+from reid import ReID
+from tatical_map import TaticalMap
 def main():
 
     input_video = 'input_videos/TestVideo1.mp4'
     output_video = 'output_videos'
-    model = 'models/best_yolo26s.pt'
-    model_pitch = 'models/best_pitch.pt'
+    model = 'models/best_yolo11s.pt'
+    model_pitch = 'models/best1_pitch.pt'
     reid_stub_path = 'stubs/reid_tracks_stubs.pkl'
     
     # == 1 ===================== READ VIDEO =====================
@@ -42,8 +43,8 @@ def main():
 
     # == 4 ===================== VIEW TRANSFORM ====================
     #Add real position
-    view_transformer = ViewTransformer()
-    view_transformer.add_transformed_position_to_tracks(tracks)
+    view_transformer = ViewTransformer(model_pitch_path=model_pitch)
+    view_transformer.add_transformed_position_to_tracks(tracks, video_frames=video_frames)
     # Interpolate Ball Positions
         #BALL INTERPOLATION
     tracks['ball'] = tracker.interpolate_ball_positions(tracks['ball'])
@@ -117,6 +118,11 @@ def main():
     
     ## Draw speed & distance
     speed_and_distance_estimator.draw_speed_and_distance( output_video_frames, tracks)
+
+    # == 10 ===================== TACTICAL MAP PIP ====================
+    # Overlay 2D Tactical Map
+    tatical_map_generator = TaticalMap()
+    output_video_frames = tatical_map_generator.draw_tatical_map_pip(output_video_frames, tracks)
 
     #Save video
     save_video(output_video_frames,output_dir=output_video)
