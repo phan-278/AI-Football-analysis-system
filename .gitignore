@@ -23,3 +23,11 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+
+# User specified ignores
+__pycache__/
+inputvideo/
+output_video/
+models/
+test/
+.antigravityignore
