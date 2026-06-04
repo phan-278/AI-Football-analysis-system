@@ -9,6 +9,7 @@ from view_tranformer import ViewTransformer
 from speed_estimator import SpeedAndDistance_Estimator
 from reid import ReID
 from tatical_map import TaticalMap
+from stats_aggregator import StatsExporter
 def main():
 
     input_video = 'input_videos/TestVideo1.mp4'
@@ -66,17 +67,16 @@ def main():
             tracks['players'][frame_num][player_id]['team_color'] = team_assigner.team_colors[team]
 
     # == 6 ==================== ReID ==============================
-    """
+
     reid = ReID(
         model_name           = 'osnet_x1_0',
         similarity_threshold = 0.75,
         jacket_dist_thresh   = 60,    # pixel
-        jacket_time_thresh   = 48,    # frame (~2s)
+        jacket_time_thresh   = 10,    # frame
         device               = 'cpu',
     )
     tracks = reid.merge_tracks_offline(video_frames, tracks)
 
-    """
     # == 7 ===================== SPEED & DISTANCE =================
     # Speed and distance estimator
     speed_and_distance_estimator = SpeedAndDistance_Estimator()
@@ -123,6 +123,11 @@ def main():
     # Overlay 2D Tactical Map
     tatical_map_generator = TaticalMap()
     output_video_frames = tatical_map_generator.draw_tatical_map_pip(output_video_frames, tracks)
+
+    # == 11 ===================== STATS AGGREGATION ===================
+    # Process and export statistics & heatmaps
+    stats_exporter = StatsExporter(frame_rate=24)
+    stats_exporter.process_and_export(tracks, team_ball_control)
 
     #Save video
     save_video(output_video_frames,output_dir=output_video)
