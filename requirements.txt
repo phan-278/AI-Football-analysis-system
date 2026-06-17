@@ -1,0 +1,9 @@
+opencv-python
+ultralytics
+supervision
+pandas 
+numpy 
+torch 
+torchvision 
+torchreid
+scikit-learn

@@ -1,17 +1,3 @@
-"""--------------------------------------------------
-Giữ nguyên pattern: track → reid → merge_tracks_offline()
-Thêm 3 kỹ thuật football-specific:
-  1. Team color filter  (lọc gallery cùng team trước khi embed)
-  2. Spatial constraint vật lý  (max tốc độ 11 m/s)
-  3. Formation prior  (tie-breaker theo primary_zone)
-
-Thay đổi so với studio version:
-  - jacket_dist_thresh: 30px → 60px  (cầu thủ di chuyển nhanh hơn)
-  - last_pos: pixel → meters  (dùng position_transformed)
-  - gallery thêm 'team' và 'primary_zone'
-  - adaptive threshold: 3 mức theo time_gap thay vì 2
-"""
-
 import torch
 import torch.nn.functional as F
 import cv2
@@ -26,14 +12,14 @@ from utils import get_foot_position, measure_distance, get_cosine_similarity
 
 
 # ──────────────────────────────────────────────
-#  Hằng số vật lý sân bóng
+#  Football pitch physical constants
 # ──────────────────────────────────────────────
-MAX_PLAYER_SPEED_MS  = 11.0   # m/s  (~40 km/h, sprint tối đa)
+MAX_PLAYER_SPEED_MS  = 11.0   # m/s  (~40 km/h, max sprint)
 FRAME_RATE           = 24     # fps
 
-# Zone mapping: chia sân 105×68m thành grid 3×2
+# Zone mapping: divide 105x68m pitch into 3x2 grid
 ZONE_COLS = [0, 35, 70, 105]   # left / center / right
-ZONE_ROWS = [0, 34, 68]        # defense / attack (theo chiều dọc)
+ZONE_ROWS = [0, 34, 68]        # defense / attack (vertical)
 ZONE_NAMES = {
     (0, 0): "left_def",   (1, 0): "center_def",   (2, 0): "right_def",
     (0, 1): "left_att",   (1, 1): "center_att",   (2, 1): "right_att",
@@ -41,7 +27,7 @@ ZONE_NAMES = {
 
 
 def _get_zone(pos_meters) -> str:
-    """Chuyển tọa độ thực (x, y) → tên zone."""
+    """Convert real coordinates (x, y) → zone name."""
     if pos_meters is None:
         return "unknown"
     x, y = pos_meters
@@ -52,21 +38,21 @@ def _get_zone(pos_meters) -> str:
 
 class ReID:
     """
-    Football ReID — pattern giống studio reid.py.
+    Football ReID — pattern similar to studio reid.py.
 
-    Sử dụng:
+    Usage:
         reid = ReID(device='cpu')
         merged = reid.merge_tracks_offline(frames, tracks)
-        # merged["players"] là tracks dict với global_id ổn định
+        # merged["players"] is tracks dict with stable global_id
     """
 
     def __init__(
         self,
         model_name           = 'osnet_x1_0',
-        similarity_threshold = 0.75,          # base threshold (time_gap ngắn)
-        jacket_dist_thresh   = 30,            # pixel — lên 60 (football)
-        jacket_time_thresh   = 24,            # frame — 2 giây ở 24fps
-        long_term_thresh     = 18000,         # frame — ~12 phút (không dùng, giữ tương thích)
+        similarity_threshold = 0.75,          # base threshold (short time_gap)
+        jacket_dist_thresh   = 30,            # pixel — increased to 60 (football)
+        jacket_time_thresh   = 24,            # frame — 2 seconds at 24fps
+        long_term_thresh     = 18000,         # frame — ~12 minutes (unused, keep for compatibility)
         device               = 'cpu',
     ):
         self.similarity_threshold = similarity_threshold
@@ -94,7 +80,7 @@ class ReID:
         self.gallery: dict = {}
 
     # ──────────────────────────────────────────
-    #  Extract feature  (giữ nguyên từ studio)
+    #  Extract feature  (kept from studio)
     # ──────────────────────────────────────────
     def extract_feature(self, frame: np.ndarray, bbox: list):
         x1, y1, x2, y2 = map(int, bbox)
@@ -113,62 +99,62 @@ class ReID:
         return feat.cpu().numpy().flatten()
 
     # ──────────────────────────────────────────
-    #  Match với gallery  (5 lớp kỹ thuật)
+    #  Match with gallery  (5 technical layers)
     # ──────────────────────────────────────────
     def _match_with_gallery(
         self,
         current_feat,
         current_pos_px,       # pixel (foot position)
-        current_pos_m,        # meters (position_transformed), có thể None
+        current_pos_m,        # meters (position_transformed), can be None
         current_frame: int,
         current_team: int,
     ):
         """
-        5 lớp theo thứ tự ưu tiên:
-          1. Jacket logic       — vị trí gần + thời gian ngắn
-          2. Team color filter  — chỉ xét cùng team
-          3. Spatial constraint — loại vi phạm vật lý
+        5 layers in priority order:
+          1. Jacket logic       — close position + short time
+          2. Team color filter  — consider only same team
+          3. Spatial constraint — filter physical violations
           4. OSNet embedding    — adaptive threshold
           5. Formation prior    — tie-breaker zone
-        Returns (best_id, score) hoặc (None, 0)
+        Returns (best_id, score) or (None, 0)
         """
         best_id    = None
         best_score = -1.0
-        candidates = []   # (score, id) để formation prior tie-break
+        candidates = []   # (score, id) for formation prior tie-break
 
         for gid, data in self.gallery.items():
             time_gap = current_frame - data['last_frame']
 
-            # ── Lớp 1: Jacket logic (giữ nguyên từ studio) ──────────────
+            # ── Layer 1: Jacket logic (kept from studio) ──────────────
             dist_px = measure_distance(current_pos_px, data['last_pos_px'])
             if dist_px < self.jacket_dist_thresh and time_gap < self.jacket_time_thresh:
                 return gid, 1.0
 
-            # ── Lớp 2: Team color filter (football-specific) ─────────────
+            # ── Layer 2: Team color filter (football-specific) ─────────────
             if data.get('team') is not None and data['team'] != current_team:
-                continue   # khác team → bỏ qua hoàn toàn
+                continue   # different team → ignore completely
 
-            # ── Lớp 3: Spatial constraint vật lý ─────────────────────────
+            # ── Layer 3: Physical spatial constraint ─────────────────────────
             if current_pos_m is not None and data.get('last_pos_m') is not None:
                 elapsed_sec     = time_gap / FRAME_RATE
                 max_dist_meters = MAX_PLAYER_SPEED_MS * elapsed_sec
                 actual_dist_m   = measure_distance(current_pos_m, data['last_pos_m'])
                 if actual_dist_m > max_dist_meters + 2.0:   # +2m buffer GPS error
-                    continue   # vật lý bất khả thi → bỏ qua
+                    continue   # impossible physics → ignore
 
-            # ── Lớp 4: OSNet embedding + adaptive threshold ───────────────
+            # ── Layer 4: OSNet embedding + adaptive threshold ───────────────
             if current_feat is None or not data['features']:
                 continue
 
             sims = [get_cosine_similarity(current_feat, f) for f in data['features']]
             score = max(sims)
 
-            # Adaptive threshold theo time_gap
-            if time_gap < 72:        # < 3 giây
+            # Adaptive threshold based on time_gap
+            if time_gap < 72:        # < 3 seconds
                 thresh = self.similarity_threshold          # 0.75
-            elif time_gap < 720:     # 3 – 30 giây
+            elif time_gap < 720:     # 3 – 30 seconds
                 thresh = self.similarity_threshold + 0.05  # 0.80
-            else:                    # > 30 giây (long-term)
+            else:                    # > 30 seconds (long-term)
                 thresh = self.similarity_threshold + 0.10  # 0.85
 
             if score >= thresh:
@@ -177,17 +163,17 @@ class ReID:
         if not candidates:
             return None, 0.0
 
-        # ── Lớp 5: Formation prior — tie-breaker ─────────────────────────
+        # ── Layer 5: Formation prior — tie-breaker ─────────────────────────
         if len(candidates) == 1:
             best_score, best_id = candidates[0]
         else:
-            # Nếu 2 candidate có score gần nhau (< 0.03), dùng zone để phân giải
+            # If 2 candidates have close scores (< 0.03), use zone to resolve
             candidates.sort(reverse=True)
             top_score, top_id = candidates[0]
             second_score, second_id = candidates[1]
 
             if top_score - second_score < 0.03:
-                # Tie: chọn người có primary_zone khớp vị trí hiện tại hơn
+                # Tie: select person whose primary_zone better matches current pos
                 current_zone = _get_zone(current_pos_m)
                 top_zone    = self.gallery[top_id].get('primary_zone', 'unknown')
                 second_zone = self.gallery[second_id].get('primary_zone', 'unknown')
@@ -218,7 +204,7 @@ class ReID:
 
         data = self.gallery[gid]
 
-        # Rolling buffer 10 embeddings (giữ nguyên từ studio)
+        # Rolling buffer 10 embeddings (kept from studio)
         if feat is not None and len(data['features']) < 10:
             data['features'].append(feat)
 
@@ -228,7 +214,7 @@ class ReID:
         if team is not None:
             data['team'] = team
 
-        # Cập nhật zone_counts → primary_zone
+        # Update zone_counts → primary_zone
         if pos_m is not None:
             zone = _get_zone(pos_m)
             data['zone_counts'][zone] = data['zone_counts'].get(zone, 0) + 1
@@ -253,12 +239,12 @@ class ReID:
             for old_id, track_info in frame_data.items():
                 bbox    = track_info['bbox']
                 pos_px  = track_info.get('position') or get_foot_position(bbox)
-                pos_m   = track_info.get('position_transformed')   # None nếu ngoài H
+                pos_m   = track_info.get('position_transformed')   # None if outside H
                 team    = track_info.get('team')
 
                 feat = self.extract_feature(frame, bbox)
 
-                # Tra cứu id_map (giống studio)
+                # Lookup id_map (similar to studio)
                 actual_id = id_map.get(old_id)
 
                 if actual_id is None:
@@ -276,18 +262,18 @@ class ReID:
                         actual_id      = old_id
                         id_map[old_id] = actual_id
 
-                # Cập nhật gallery
+                # Update gallery
                 self._update_gallery(actual_id, feat, pos_px, pos_m, frame_idx, team)
 
-                # Ghi kết quả — giữ toàn bộ track_info, chỉ đổi key
+                # Record result — keep entire track_info, only change key
                 new_player_tracks[frame_idx][actual_id] = track_info
 
-            # Log tiến độ
+            # Log progress
             if frame_idx % 500 == 0:
                 print(f"[ReID] Progress {frame_idx}/{len(player_tracks)} frames "
                       f"| gallery size: {len(self.gallery)} IDs")
 
-        # Giữ referees và ball không thay đổi
+        # Keep referees and ball unchanged
         result = dict(tracks)
         result["players"] = new_player_tracks
 
@@ -313,14 +299,14 @@ class ReID:
     #  Save to stubs
     # ──────────────────────────────────────────
     def save_gallery(self, stub_path):
-        """Lưu toàn bộ dữ liệu gallery (features, zones, team) vào file stub."""
+        """Save entire gallery data (features, zones, team) to stub file."""
         os.makedirs(os.path.dirname(stub_path), exist_ok=True)
         with open(stub_path, 'wb') as f:
             pickle.dump(self.gallery, f)
         print(f"[ReID] Gallery saved to {stub_path}")
 
     def load_gallery(self, stub_path):
-        """Tải dữ liệu gallery từ file stub nếu tồn tại."""
+        """Load gallery data from stub file if exists."""
         if os.path.exists(stub_path):
             with open(stub_path, 'rb') as f:
                 self.gallery = pickle.load(f)
@@ -329,7 +315,7 @@ class ReID:
         return False
 
     def save_merged_tracks(self, tracks, stub_path):
-        """Lưu kết quả tracks sau khi đã ReID."""
+        """Save tracks result after ReID."""
         os.makedirs(os.path.dirname(stub_path), exist_ok=True)
         with open(stub_path, 'wb') as f:
             pickle.dump(tracks, f)

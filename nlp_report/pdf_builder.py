@@ -20,15 +20,15 @@ try:
     )
     REPORTLAB_AVAILABLE = True
 except ImportError as e:
-    raise ImportError("\n\n❌ LỖI: Bạn chưa cài đặt thư viện 'reportlab' để xuất file PDF.\n👉 Hãy chạy lệnh này trong Terminal: pip install reportlab\n") from e
+    raise ImportError("\n\n❌ ERROR: You haven't installed 'reportlab' library to export PDF.\n👉 Run this command in Terminal: pip install reportlab\n") from e
 
 
-# ─── Màu sắc ────────────────────────────────────────────────────────────────
+# ─── Colors ────────────────────────────────────────────────────────────────
 DARK        = colors.HexColor("#0f172a")
 DARK2       = colors.HexColor("#1e293b")
-TEAM1_C     = colors.HexColor("#2563eb")   # xanh dương
-TEAM2_C     = colors.HexColor("#dc2626")   # đỏ
-GOLD        = colors.HexColor("#f59e0b")   # vàng
+TEAM1_C     = colors.HexColor("#2563eb")   # blue
+TEAM2_C     = colors.HexColor("#dc2626")   # red
+GOLD        = colors.HexColor("#f59e0b")   # yellow
 LIGHT       = colors.HexColor("#f8fafc")
 BORDER      = colors.HexColor("#e2e8f0")
 GRAY        = colors.HexColor("#94a3b8")
@@ -43,25 +43,25 @@ RED_DARK    = colors.HexColor("#dc2626")
 
 class PDFBuilder:
     """
-    Build PDF báo cáo chiến thuật.
+    Build tactical report PDF.
 
     Parameters
     ----------
-    report      : dict  — output của LLMClient.generate()
-    match_stats : dict  — output của StatsAggregator.compute()
-    team1_name  : str   — tên hiển thị đội 1 (mặc định "Đội 1")
-    team2_name  : str   — tên hiển thị đội 2 (mặc định "Đội 2")
+    report      : dict  — output of LLMClient.generate()
+    match_stats : dict  — output of StatsAggregator.compute()
+    team1_name  : str   — display name of team 1 (default "Team 1")
+    team2_name  : str   — display name of team 2 (default "Team 2")
     """
 
     def __init__(
         self,
         report: dict[str, Any],
         match_stats: dict[str, Any],
-        team1_name: str = "Đội 1",
-        team2_name: str = "Đội 2",
+        team1_name: str = "Team 1",
+        team2_name: str = "Team 2",
     ):
         if not REPORTLAB_AVAILABLE:
-            raise ImportError("Cần cài: pip install reportlab")
+            raise ImportError("Need to install: pip install reportlab")
 
         self.report     = report
         self.stats      = match_stats
@@ -74,7 +74,7 @@ class PDFBuilder:
     # ──────────────────────────────────────────────
 
     def save(self, output_path: str) -> str:
-        """Build PDF và lưu. Trả về đường dẫn tuyệt đối."""
+        """Build and save PDF. Returns absolute path."""
         os.makedirs(
             os.path.dirname(os.path.abspath(output_path)),
             exist_ok=True,
@@ -156,7 +156,7 @@ class PDFBuilder:
 
     @property
     def _W(self) -> float:
-        """Chiều rộng nội dung (17cm)."""
+        """Content width (17cm)."""
         return 17 * cm
 
     def _sec_bar(self, title: str, accent=GOLD) -> Table:
@@ -175,7 +175,7 @@ class PDFBuilder:
         return t
 
     def _stat_card_row(self, cards: list[tuple[str, str]], accent) -> Table:
-        """Hàng stat cards."""
+        """Row of stat cards."""
         n = len(cards)
         w = self._W / n
         labels = [Paragraph(lbl, self.S["small_gray"]) for lbl, _ in cards]
@@ -199,17 +199,17 @@ class PDFBuilder:
         return t
 
     def _sw_table(self, strengths: list, weaknesses: list) -> Table:
-        """Bảng Strengths / Weaknesses 2 cột."""
+        """2-column Strengths / Weaknesses table."""
         max_r = max(len(strengths), len(weaknesses))
         s_pad = strengths + [""] * (max_r - len(strengths))
         w_pad = weaknesses + [""] * (max_r - len(weaknesses))
 
         header = [
-            Paragraph("✅  Điểm mạnh", ParagraphStyle(
+            Paragraph("✅  Strengths", ParagraphStyle(
                 "sh", fontName="Helvetica-Bold", fontSize=9,
                 textColor=WHITE, alignment=TA_CENTER,
             )),
-            Paragraph("⚠️  Điểm yếu", ParagraphStyle(
+            Paragraph("⚠️  Weaknesses", ParagraphStyle(
                 "wh", fontName="Helvetica-Bold", fontSize=9,
                 textColor=WHITE, alignment=TA_CENTER,
             )),
@@ -248,10 +248,10 @@ class PDFBuilder:
         fps     = info.get("fps", 24)
 
         data = [
-            [Paragraph("⚽  BÁO CÁO PHÂN TÍCH CHIẾN THUẬT", self.S["h_title"])],
+            [Paragraph("⚽  TACTICAL ANALYSIS REPORT", self.S["h_title"])],
             [Paragraph(f"{self.t1_name}  ⚔  {self.t2_name}", self.S["h_vs"])],
             [Paragraph(
-                f"Video: {video}  |  Thời lượng: {dur_min} phút  |  "
+                f"Video: {video}  |  Duration: {dur_min} mins  |  "
                 f"{fps} FPS  |  {date}",
                 self.S["h_sub"],
             )],
@@ -270,14 +270,14 @@ class PDFBuilder:
     def _s_overview(self) -> list:
         text = self.report.get("match_overview", "")
         return [
-            self._sec_bar("📋  TỔNG QUAN TRẬN ĐẤU"),
+            self._sec_bar("📋  MATCH OVERVIEW"),
             Spacer(1, 0.2 * cm),
             Paragraph(text, self.S["body"]),
             Spacer(1, 0.3 * cm),
         ]
 
     def _s_quick_compare(self) -> list:
-        """2 hàng stat cards so sánh nhanh 2 đội."""
+        """2 rows of stat cards for quick team comparison."""
         t1 = self.stats.get("team1", {})
         t2 = self.stats.get("team2", {})
         ball = self.stats.get("ball", {})
@@ -288,22 +288,22 @@ class PDFBuilder:
         # Row 1: team1 cards
         r1_cards = [
             (f"{self.t1_name}", ""),
-            ("Kiểm soát bóng", f"{ball.get('possession_team1_pct', 0):.0f}%"),
-            ("Quãng đường",    f"{t1.get('total_distance_km', 0):.2f} km"),
-            ("Tốc độ TB",      f"{t1.get('avg_speed_kmh', 0):.1f} km/h"),
+            ("Possession",     f"{ball.get('possession_team1_pct', 0):.0f}%"),
+            ("Distance",       f"{t1.get('total_distance_km', 0):.2f} km"),
+            ("Avg Speed",      f"{t1.get('avg_speed_kmh', 0):.1f} km/h"),
             ("Pressing",       str(t1.get("pressing_events", 0))),
             ("Compact",        f"{t1.get('avg_compactness_m', 0):.1f} m"),
         ]
         r2_cards = [
             (f"{self.t2_name}", ""),
-            ("Kiểm soát bóng", f"{ball.get('possession_team2_pct', 0):.0f}%"),
-            ("Quãng đường",    f"{t2.get('total_distance_km', 0):.2f} km"),
-            ("Tốc độ TB",      f"{t2.get('avg_speed_kmh', 0):.1f} km/h"),
+            ("Possession",     f"{ball.get('possession_team2_pct', 0):.0f}%"),
+            ("Distance",       f"{t2.get('total_distance_km', 0):.2f} km"),
+            ("Avg Speed",      f"{t2.get('avg_speed_kmh', 0):.1f} km/h"),
             ("Pressing",       str(t2.get("pressing_events", 0))),
             ("Compact",        f"{t2.get('avg_compactness_m', 0):.1f} m"),
         ]
 
-        # Override ô đầu tiên (tên đội) thành label
+        # Override first cell (team name) to label
         n = len(r1_cards)
         w = self._W / n
 
@@ -324,12 +324,12 @@ class PDFBuilder:
         team1_card = _make_name_card(self.t1_name, TEAM1_C)
         team2_card = _make_name_card(self.t2_name, TEAM2_C)
 
-        # Build combined row tables (skip index 0 — tên)
+        # Build combined row tables (skip index 0 — name)
         row1 = self._stat_card_row(r1_cards[1:], TEAM1_C)
         row2 = self._stat_card_row(r2_cards[1:], TEAM2_C)
 
         return [
-            self._sec_bar("📊  SO SÁNH NHANH 2 ĐỘI"),
+            self._sec_bar("📊  QUICK TEAM COMPARISON"),
             Spacer(1, 0.2 * cm),
             Table([[team1_card, row1]], colWidths=[w, self._W - w]),
             Spacer(1, 0.15 * cm),
@@ -338,7 +338,7 @@ class PDFBuilder:
         ]
 
     def _s_team(self, team_key: str) -> list:
-        """Section phân tích 1 đội."""
+        """Section analyzing 1 team."""
         is_t1    = (team_key == "team1")
         name     = self.t1_name if is_t1 else self.t2_name
         color    = TEAM1_C if is_t1 else TEAM2_C
@@ -350,11 +350,11 @@ class PDFBuilder:
 
         # Stat cards
         cards = [
-            ("Sơ đồ",       t_stats.get("dominant_formation", "N/A")),
-            ("Kiểm soát",   f"{poss:.0f}%"),
-            ("Quãng đường", f"{t_stats.get('total_distance_km', 0):.2f} km"),
-            ("Tốc độ TB",   f"{t_stats.get('avg_speed_kmh', 0):.1f} km/h"),
-            ("Tốc độ Max",  f"{t_stats.get('max_speed_kmh', 0):.1f} km/h"),
+            ("Formation",   t_stats.get("dominant_formation", "N/A")),
+            ("Possession",  f"{poss:.0f}%"),
+            ("Distance",    f"{t_stats.get('total_distance_km', 0):.2f} km"),
+            ("Avg Speed",   f"{t_stats.get('avg_speed_kmh', 0):.1f} km/h"),
+            ("Max Speed",   f"{t_stats.get('max_speed_kmh', 0):.1f} km/h"),
             ("Pressing",    str(t_stats.get("pressing_events", 0))),
             ("Compact",     f"{t_stats.get('avg_compactness_m', 0):.1f} m"),
         ]
@@ -376,14 +376,14 @@ class PDFBuilder:
 
         icon = "🔵" if is_t1 else "🔴"
         return [
-            self._sec_bar(f"{icon}  PHÂN TÍCH: {name.upper()}", accent=color),
+            self._sec_bar(f"{icon}  ANALYSIS: {name.upper()}", accent=color),
             Spacer(1, 0.2 * cm),
             self._stat_card_row(cards, color),
             Spacer(1, 0.2 * cm),
             zone_bar,
             Spacer(1, 0.25 * cm),
             Paragraph(f"<b>{title}</b>", self.S["body"]) if title else Spacer(1, 0),
-            Paragraph(f"<i>Sơ đồ & chiến thuật:</i> {form_txt}", self.S["body"]) if form_txt else Spacer(1, 0),
+            Paragraph(f"<i>Formation & tactics:</i> {form_txt}", self.S["body"]) if form_txt else Spacer(1, 0),
             Paragraph(summary, self.S["body"]) if summary else Spacer(1, 0),
             Spacer(1, 0.15 * cm),
             sw,
@@ -391,7 +391,7 @@ class PDFBuilder:
         ]
 
     def _zone_bar(self, zone: dict, color) -> Table:
-        """Thanh phân bố zone 3 phần."""
+        """3-part zone distribution bar."""
         def_pct = zone.get("defensive", 0)
         mid_pct = zone.get("middle", 0)
         att_pct = zone.get("attacking", 0)
@@ -399,17 +399,17 @@ class PDFBuilder:
         W = self._W
         cells = [
             Paragraph(
-                f"Phòng thủ<br/><b>{def_pct:.0f}%</b>",
+                f"Defensive<br/><b>{def_pct:.0f}%</b>",
                 ParagraphStyle("zd", fontName="Helvetica", fontSize=8,
                                textColor=colors.HexColor("#1d4ed8"), alignment=TA_CENTER),
             ),
             Paragraph(
-                f"Giữa sân<br/><b>{mid_pct:.0f}%</b>",
+                f"Middle<br/><b>{mid_pct:.0f}%</b>",
                 ParagraphStyle("zm", fontName="Helvetica", fontSize=8,
                                textColor=colors.HexColor("#0369a1"), alignment=TA_CENTER),
             ),
             Paragraph(
-                f"Tấn công<br/><b>{att_pct:.0f}%</b>",
+                f"Attacking<br/><b>{att_pct:.0f}%</b>",
                 ParagraphStyle("za", fontName="Helvetica", fontSize=8,
                                textColor=colors.HexColor("#1e40af"), alignment=TA_CENTER),
             ),
@@ -427,7 +427,7 @@ class PDFBuilder:
         return t
 
     def _s_comparison_table(self) -> list:
-        """Bảng số liệu chi tiết 2 đội."""
+        """Detailed team stats table."""
         t1   = self.stats.get("team1", {})
         t2   = self.stats.get("team2", {})
         ball = self.stats.get("ball", {})
@@ -435,7 +435,7 @@ class PDFBuilder:
         z2   = t2.get("zone_distribution", {})
 
         def _winner(v1, v2, higher_is_better=True):
-            """Trả về (bold_t1, bold_t2)."""
+            """Returns (bold_t1, bold_t2)."""
             try:
                 n1 = float(str(v1).replace("%", "").replace("km", "").replace("km/h", "").strip())
                 n2 = float(str(v2).replace("%", "").replace("km", "").replace("km/h", "").strip())
@@ -447,35 +447,35 @@ class PDFBuilder:
                 return False, False
 
         rows_data = [
-            ("Chỉ số", self.t1_name, self.t2_name),
-            ("Sơ đồ chủ đạo",
+            ("Metric", self.t1_name, self.t2_name),
+            ("Dominant Formation",
              t1.get("dominant_formation", "N/A"),
              t2.get("dominant_formation", "N/A")),
-            ("Kiểm soát bóng",
+            ("Possession",
              f"{ball.get('possession_team1_pct', 0):.1f}%",
              f"{ball.get('possession_team2_pct', 0):.1f}%"),
-            ("Tổng quãng đường",
+            ("Total Distance",
              f"{t1.get('total_distance_km', 0):.3f} km",
              f"{t2.get('total_distance_km', 0):.3f} km"),
-            ("Tốc độ trung bình",
+            ("Average Speed",
              f"{t1.get('avg_speed_kmh', 0):.1f} km/h",
              f"{t2.get('avg_speed_kmh', 0):.1f} km/h"),
-            ("Tốc độ tối đa",
+            ("Max Speed",
              f"{t1.get('max_speed_kmh', 0):.1f} km/h",
              f"{t2.get('max_speed_kmh', 0):.1f} km/h"),
-            ("Số lần pressing",
+            ("Pressing Events",
              str(t1.get("pressing_events", 0)),
              str(t2.get("pressing_events", 0))),
-            ("Độ compact (TB)",
+            ("Avg Compactness",
              f"{t1.get('avg_compactness_m', 0):.1f} m",
              f"{t2.get('avg_compactness_m', 0):.1f} m"),
-            ("Zone phòng thủ",
+            ("Defensive Zone",
              f"{z1.get('defensive', 0):.1f}%",
              f"{z2.get('defensive', 0):.1f}%"),
-            ("Zone giữa sân",
+            ("Middle Zone",
              f"{z1.get('middle', 0):.1f}%",
              f"{z2.get('middle', 0):.1f}%"),
-            ("Zone tấn công",
+            ("Attacking Zone",
              f"{z1.get('attacking', 0):.1f}%",
              f"{z2.get('attacking', 0):.1f}%"),
         ]
@@ -521,24 +521,24 @@ class PDFBuilder:
         ]
         tbl.setStyle(TableStyle(style))
         return [
-            self._sec_bar("⚖️  BẢNG SO SÁNH CHI TIẾT"),
+            self._sec_bar("⚖️  DETAILED COMPARISON TABLE"),
             Spacer(1, 0.2 * cm),
             tbl,
             Spacer(1, 0.4 * cm),
         ]
 
     def _s_comparison_text(self) -> list:
-        """Phân tích so sánh text từ LLM."""
+        """LLM text comparison analysis."""
         comp = self.report.get("comparison", {})
         items = [
-            ("possession_battle", "Kiểm soát bóng"),
+            ("possession_battle", "Possession"),
             ("pressing_duel",     "Pressing"),
-            ("space_usage",       "Sử dụng không gian"),
-            ("physical_comparison","Thể lực"),
-            ("key_difference",    "Khác biệt chiến thuật cốt lõi"),
+            ("space_usage",       "Space Usage"),
+            ("physical_comparison","Fitness"),
+            ("key_difference",    "Core Tactical Differences"),
         ]
         elems: list = [
-            self._sec_bar("🔍  PHÂN TÍCH SO SÁNH"),
+            self._sec_bar("🔍  COMPARISON ANALYSIS"),
             Spacer(1, 0.2 * cm),
         ]
         for key, label in items:
@@ -552,19 +552,19 @@ class PDFBuilder:
         return elems
 
     def _s_key_players(self) -> list:
-        """Cầu thủ nổi bật."""
+        """Key Players."""
         players = self.report.get("key_players", [])
         if not players:
             return []
 
         rows = [[
-            Paragraph("<b>Đội</b>", ParagraphStyle(
+            Paragraph("<b>Team</b>", ParagraphStyle(
                 "kph", fontName="Helvetica-Bold", fontSize=9, textColor=WHITE)),
-            Paragraph("<b>Cầu thủ</b>", ParagraphStyle(
+            Paragraph("<b>Player</b>", ParagraphStyle(
                 "kph2", fontName="Helvetica-Bold", fontSize=9, textColor=WHITE)),
-            Paragraph("<b>Vai trò</b>", ParagraphStyle(
+            Paragraph("<b>Role</b>", ParagraphStyle(
                 "kph3", fontName="Helvetica-Bold", fontSize=9, textColor=WHITE)),
-            Paragraph("<b>Nhận xét</b>", ParagraphStyle(
+            Paragraph("<b>Comment</b>", ParagraphStyle(
                 "kph4", fontName="Helvetica-Bold", fontSize=9, textColor=WHITE)),
         ]]
 
@@ -592,7 +592,7 @@ class PDFBuilder:
             ("VALIGN",        (0, 0), (-1, -1), "TOP"),
         ]))
         return [
-            self._sec_bar("🌟  CẦU THỦ NỔI BẬT"),
+            self._sec_bar("🌟  KEY PLAYERS"),
             Spacer(1, 0.2 * cm),
             tbl,
             Spacer(1, 0.4 * cm),
@@ -610,7 +610,7 @@ class PDFBuilder:
             ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
         ]))
         return [
-            self._sec_bar("🏆  KẾT LUẬN", accent=GOLD),
+            self._sec_bar("🏆  CONCLUSION", accent=GOLD),
             Spacer(1, 0.2 * cm),
             box,
             Spacer(1, 0.5 * cm),
@@ -620,7 +620,7 @@ class PDFBuilder:
         date = datetime.now().strftime("%d/%m/%Y %H:%M")
         t = Table([[
             Paragraph(
-                f"Báo cáo được tạo tự động bởi  AI Football Analysis System  •  {date}",
+                f"Report automatically generated by AI Football Analysis System • {date}",
                 self.S["footer"],
             )
         ]], colWidths=[self._W])

@@ -19,6 +19,6 @@ def get_cosine_similarity(feat1, feat2):
 
 def is_static(pos_history, threshold=20):
     if len(pos_history) < 10: return False
-    # Tính độ lệch chuẩn của các vị trí gần đây
+    # Calculate standard deviation of recent positions
     std_dev = np.std([p[0] for p in pos_history]) + np.std([p[1] for p in pos_history])
     return std_dev < threshold

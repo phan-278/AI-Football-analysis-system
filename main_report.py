@@ -7,7 +7,7 @@ from nlp_report.llm_client import LLMClient
 from nlp_report.pdf_builder import PDFBuilder
 
 def adapt_stats(root_stats: dict) -> dict:
-    """Chuyển đổi match_stats.json từ root stats_aggregator sang format của nlp_report."""
+    """Convert match_stats.json from root stats_aggregator to nlp_report format."""
     def _adapt_team(team_id: int) -> dict:
         t_key = f"team_{team_id}"
         team_data = root_stats.get("teams", {}).get(t_key, {})
@@ -25,10 +25,10 @@ def adapt_stats(root_stats: dict) -> dict:
                 max_s = p.get("max_speed_kmh", 0)
                 max_speeds.append(max_s)
                 
-                # Zone distribution từ player
+                # Zone distribution from player
                 p_zone = p.get("zone_distribution", {})
                 for z, v in p_zone.items():
-                    # Map zone names nếu có khác biệt
+                    # Map zone names if there is a difference
                     z_lower = z.lower()
                     if "def" in z_lower:
                         zone_counts["defensive"] += v
@@ -66,7 +66,7 @@ def adapt_stats(root_stats: dict) -> dict:
             "duration_seconds": root_stats.get("match_summary", {}).get("match_duration_seconds", 0),
             "fps": root_stats.get("match_summary", {}).get("frame_rate", 24),
             "total_frames": root_stats.get("match_summary", {}).get("total_frames", 0),
-            "video_file": "Video (Từ Stats Exporter)"
+            "video_file": "Video (From Stats Exporter)"
         },
         "ball": {
             "possession_team1_pct": root_stats.get("teams", {}).get("team_1", {}).get("possession_percentage", 50),
@@ -78,45 +78,45 @@ def adapt_stats(root_stats: dict) -> dict:
     return nlp_stats
 
 def run_report(match_stats_path: str, output_pdf_path: str, provider: str = "claude"):
-    print("[1/3] Đang tải biến môi trường (API Key)...")
+    print("[1/3] Loading environment variables (API Key)...")
     load_dotenv()
     
     if not os.path.exists(match_stats_path):
-        raise FileNotFoundError(f"Không tìm thấy file {match_stats_path}. Bạn cần chạy 'python main.py' trước để tạo file này.")
+        raise FileNotFoundError(f"File {match_stats_path} not found. You need to run 'python main.py' first to create this file.")
     
-    print(f"[2/3] Đọc dữ liệu từ {match_stats_path} và gọi API ({provider})...")
+    print(f"[2/3] Reading data from {match_stats_path} and calling API ({provider})...")
     with open(match_stats_path, 'r', encoding='utf-8') as f:
         root_stats = json.load(f)
         
-    # CHUYỂN ĐỔI STATS CỦA BẠN THÀNH STATS MÀ NLP YÊU CẦU
+    # CONVERT YOUR STATS TO STATS REQUESTED BY NLP
     adapted_stats = adapt_stats(root_stats)
         
     try:
-        # Khởi tạo LLM Client (sẽ tự lấy API Key từ biến môi trường ANTHROPIC_API_KEY hoặc OPENAI_API_KEY)
+        # Initialize LLM Client (will auto get API Key from env var ANTHROPIC_API_KEY or OPENAI_API_KEY)
         client = LLMClient(provider=provider)
         report_json = client.generate_from_stats(adapted_stats)
-        print("      -> API trả lời thành công.")
+        print("      -> API responded successfully.")
     except Exception as e:
-        print(f"\n[LỖI API] Lỗi khi gọi LLM: {e}")
-        print("Vui lòng kiểm tra lại API Key trong file .env hoặc kết nối mạng.")
+        print(f"\n[API ERROR] Error calling LLM: {e}")
+        print("Please check API Key in .env file or network connection.")
         return
 
-    print(f"[3/3] Đang tạo file PDF báo cáo...")
+    print(f"[3/3] Generating PDF report file...")
     pdf_builder = PDFBuilder(
         report=report_json,
-        match_stats=adapted_stats,  # Dùng adapted_stats cho PDF luôn
-        team1_name="Đội 1 (Xanh)",
-        team2_name="Đội 2 (Đỏ)"
+        match_stats=adapted_stats,  # Use adapted_stats for PDF as well
+        team1_name="Team 1 (Blue)",
+        team2_name="Team 2 (Red)"
     )
     saved_path = pdf_builder.save(output_pdf_path)
-    print(f"✅ HOÀN TẤT! Báo cáo đã được lưu tại: {saved_path}")
+    print(f"✅ COMPLETE! Report saved at: {saved_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Sinh báo cáo chiến thuật (PDF) bằng NLP từ match_stats.json.")
-    # Sửa default path thành thư mục outputs/ nơi mà root StatsExporter lưu file
-    parser.add_argument("--stats_path", type=str, default="outputs/match_stats.json", help="Đường dẫn đến file JSON kết quả tracking.")
-    parser.add_argument("--output", type=str, default="output_videos/tactical_report.pdf", help="Đường dẫn lưu file PDF đầu ra.")
-    parser.add_argument("--provider", type=str, choices=["gemini", "claude", "openai","groq"], default="gemini", help="Model LLM (gemini, claude hoặc openai).")
+    parser = argparse.ArgumentParser(description="Generate tactical report (PDF) using NLP from match_stats.json.")
+    # Fix default path to outputs/ directory where root StatsExporter saves the file
+    parser.add_argument("--stats_path", type=str, default="outputs/match_stats.json", help="Path to JSON file of tracking results.")
+    parser.add_argument("--output", type=str, default="output_videos/tactical_report.pdf", help="Path to save output PDF file.")
+    parser.add_argument("--provider", type=str, choices=["gemini", "claude", "openai","groq"], default="gemini", help="LLM Model (gemini, claude or openai).")
     
     args = parser.parse_args()
     

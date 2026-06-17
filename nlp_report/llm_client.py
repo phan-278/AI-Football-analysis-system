@@ -12,7 +12,7 @@ class LLMClient:
         "groq": "llama-3.3-70b-versatile",
     }
 
-    # Model fallback khi model mặc định bị 503
+    # Fallback models when default model returns 503
     FALLBACK_MODELS = {
         "gemini": ["gemini-1.5-flash", "gemini-1.5-pro"],
     }
@@ -28,7 +28,7 @@ class LLMClient:
 
         if self.provider not in self.DEFAULT_MODELS:
             raise ValueError(
-                f"Provider không hỗ trợ: '{self.provider}'. "
+                f"Unsupported provider: '{self.provider}'. "
                 f"Supported: {list(self.DEFAULT_MODELS.keys())}"
             )
 
@@ -62,7 +62,7 @@ class LLMClient:
                 env_var = "API_KEY"
 
             raise ValueError(
-                f"Thiếu API key. Truyền api_key= hoặc set biến môi trường {env_var}."
+                f"Missing API key. Pass api_key= or set environment variable {env_var}."
             )
 
     # ──────────────────────────────────────────────
@@ -76,13 +76,13 @@ class LLMClient:
         max_tokens: int = 4000,
     ) -> dict[str, Any]:
         last_error = None
-        # Danh sách model sẽ thử: model hiện tại + fallback (nếu có)
+        # List of models to try: current model + fallback (if any)
         fallbacks = self.FALLBACK_MODELS.get(self.provider, [])
         models_to_try = [self.model] + fallbacks
 
         for model_candidate in models_to_try:
             if model_candidate != self.model:
-                print(f"[LLMClient] Thử fallback model: {model_candidate}...")
+                print(f"[LLMClient] Trying fallback model: {model_candidate}...")
             original_model = self.model
             self.model = model_candidate
 
@@ -100,38 +100,38 @@ class LLMClient:
                     if attempt < self.max_retries:
                         wait = 2 ** attempt
                         print(
-                            f"[LLMClient] Parse lỗi lần {attempt}: "
-                            f"{e}. Retry sau {wait}s..."
+                            f"[LLMClient] Parse error attempt {attempt}: "
+                            f"{e}. Retrying in {wait}s..."
                         )
                         time.sleep(wait)
 
                 except Exception as e:
                     last_error = e
                     error_str = str(e)
-                    # 503 / overload → thử fallback model ngay
+                    # 503 / overload → try fallback model immediately
                     if "503" in error_str or "UNAVAILABLE" in error_str or "overloaded" in error_str.lower():
-                        print(f"[LLMClient] Model {model_candidate} đang quá tải (503). Chuyển model khác...")
-                        break  # thoát vòng retry, sang model tiếp theo
+                        print(f"[LLMClient] Model {model_candidate} is overloaded (503). Switching model...")
+                        break  # exit retry loop, move to next model
                     if attempt < self.max_retries:
                         wait = 2 ** attempt
                         print(
-                            f"[LLMClient] API lỗi lần {attempt}: "
-                            f"{e}. Retry sau {wait}s..."
+                            f"[LLMClient] API error attempt {attempt}: "
+                            f"{e}. Retrying in {wait}s..."
                         )
                         time.sleep(wait)
                     else:
                         self.model = original_model
                         raise
             else:
-                # Hết retry mà không có 503 break → lỗi parse không phục hồi
+                # Ran out of retries without 503 break → unrecoverable parse error
                 self.model = original_model
-                continue  # sang model fallback tiếp
+                continue  # move to next fallback model
 
             self.model = original_model
 
         raise RuntimeError(
-            f"LLMClient thất bại sau khi thử tất cả models {models_to_try}. "
-            f"Lỗi cuối: {last_error}"
+            f"LLMClient failed after trying all models {models_to_try}. "
+            f"Last error: {last_error}"
         ) from last_error
 
     def generate_from_stats(
@@ -194,7 +194,7 @@ class LLMClient:
             )
 
         raise ValueError(
-            f"Provider không hỗ trợ: '{self.provider}'"
+            f"Unsupported provider: '{self.provider}'"
         )
 
     # ──────────────────────────────────────────────
@@ -213,7 +213,7 @@ class LLMClient:
             from google.genai import types
         except ImportError:
             raise ImportError(
-                "Cần cài: pip install google-genai"
+                "Need to install: pip install google-genai"
             )
 
         client = genai.Client(api_key=self.api_key)
@@ -229,7 +229,7 @@ class LLMClient:
                 system_instruction=system_prompt,
                 max_output_tokens=max_tokens,
                 temperature=0.7,
-                response_mime_type="application/json",  # ép Gemini trả JSON thuần
+                response_mime_type="application/json",  # force Gemini to return pure JSON
             ),
         )
 
@@ -250,7 +250,7 @@ class LLMClient:
             import anthropic
         except ImportError:
             raise ImportError(
-                "Cần cài: pip install anthropic"
+                "Need to install: pip install anthropic"
             )
 
         client = anthropic.Anthropic(
@@ -286,7 +286,7 @@ class LLMClient:
             from openai import OpenAI
         except ImportError:
             raise ImportError(
-                "Cần cài: pip install openai"
+                "Need to install: pip install openai"
             )
 
         client = OpenAI(
@@ -362,7 +362,7 @@ class LLMClient:
 
         text = raw.strip()
 
-        # Loại bỏ markdown code block nếu có (```json ... ``` hoặc ``` ... ```)
+        # Remove markdown code block if present (```json ... ``` or ``` ... ```)
         if text.startswith("```"):
             lines = text.split("\n")
             text = "\n".join(
@@ -371,13 +371,13 @@ class LLMClient:
                 if not line.strip().startswith("```")
             ).strip()
 
-        # Gemini đôi khi wrap trong object thêm — thử tìm JSON object đầu tiên
+        # Gemini sometimes wraps in an extra object — try finding first JSON object
         if not text.startswith("{"):
             start = text.find("{")
             if start != -1:
                 text = text[start:]
 
-        # Đảm bảo cắt đúng tại dấu } cuối cùng
+        # Make sure to cut exactly at the last }
         if not text.endswith("}"):
             end = text.rfind("}")
             if end != -1:
@@ -397,7 +397,7 @@ class LLMClient:
 
         if missing:
             raise KeyError(
-                f"Response thiếu các key: {missing}"
+                f"Response missing keys: {missing}"
             )
 
         return data

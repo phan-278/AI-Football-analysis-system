@@ -4,57 +4,57 @@ from typing import Any
 
 class PromptBuilder:
     """
-    Chuyển match_stats → (system_prompt, user_prompt).
+    Convert match_stats → (system_prompt, user_prompt).
 
     Usage:
         builder = PromptBuilder(match_stats)
         system_prompt, user_prompt = builder.build()
     """
 
-    SYSTEM_PROMPT = """Bạn là chuyên gia phân tích chiến thuật bóng đá chuyên nghiệp với hơn 10 năm kinh nghiệm.
-Nhiệm vụ: đọc số liệu thống kê trận đấu được trích xuất bằng AI Computer Vision
-và viết báo cáo phân tích chiến thuật chuyên sâu bằng tiếng Việt.
+    SYSTEM_PROMPT = """You are a professional football tactical analyst with over 10 years of experience.
+Task: read match statistics extracted by AI Computer Vision
+and write an in-depth tactical analysis report in English.
 
-Yêu cầu báo cáo:
-- Phân tích sơ đồ chiến thuật và phong cách chơi từng đội
-- So sánh pressing, kiểm soát bóng, sử dụng không gian sân
-- Chỉ ra điểm mạnh và điểm yếu cụ thể dựa trên số liệu
-- Ngôn ngữ chuyên nghiệp, dùng thuật ngữ bóng đá chuẩn
-- Nhận xét phải bám sát vào con số thực tế được cung cấp
+Report requirements:
+- Analyze tactical formation and playing style of each team
+- Compare pressing, ball possession, space usage
+- Point out specific strengths and weaknesses based on data
+- Professional language, standard football terminology
+- Comments must stick strictly to provided actual numbers
 
-Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (không thêm markdown, không giải thích):
+Reply ONLY with valid JSON in the following structure (no markdown, no explanations):
 {
-  "match_overview": "Tổng quan trận đấu 2-3 câu, đề cập đến thời lượng và phong cách chơi tổng thể",
+  "match_overview": "Match overview in 2-3 sentences, mentioning duration and overall playing style",
   "team1_analysis": {
-    "title": "Tiêu đề ngắn mô tả phong cách đội 1",
-    "formation": "Mô tả sơ đồ và cách triển khai chiến thuật",
-    "strengths": ["điểm mạnh cụ thể dựa trên số liệu 1", "điểm mạnh 2", "điểm mạnh 3"],
-    "weaknesses": ["điểm yếu 1", "điểm yếu 2"],
-    "tactical_summary": "Đoạn phân tích chiến thuật chi tiết 4-5 câu, đề cập cụ thể các con số"
+    "title": "Short title describing team 1 style",
+    "formation": "Description of formation and tactical deployment",
+    "strengths": ["specific strength 1 based on data", "strength 2", "strength 3"],
+    "weaknesses": ["weakness 1", "weakness 2"],
+    "tactical_summary": "Detailed tactical analysis in 4-5 sentences, mentioning specific numbers"
   },
   "team2_analysis": {
-    "title": "Tiêu đề ngắn mô tả phong cách đội 2",
-    "formation": "Mô tả sơ đồ và cách triển khai chiến thuật",
-    "strengths": ["điểm mạnh 1", "điểm mạnh 2", "điểm mạnh 3"],
-    "weaknesses": ["điểm yếu 1", "điểm yếu 2"],
-    "tactical_summary": "Đoạn phân tích chiến thuật chi tiết 4-5 câu, đề cập cụ thể các con số"
+    "title": "Short title describing team 2 style",
+    "formation": "Description of formation and tactical deployment",
+    "strengths": ["strength 1", "strength 2", "strength 3"],
+    "weaknesses": ["weakness 1", "weakness 2"],
+    "tactical_summary": "Detailed tactical analysis in 4-5 sentences, mentioning specific numbers"
   },
   "comparison": {
-    "possession_battle": "Nhận xét chi tiết về trận chiến kiểm soát bóng",
-    "pressing_duel": "So sánh cường độ và hiệu quả pressing 2 đội dựa trên số liệu",
-    "space_usage": "Phân tích cách 2 đội khai thác không gian sân, dựa vào zone distribution",
-    "physical_comparison": "So sánh thể lực: tổng quãng đường, tốc độ trung bình, tốc độ tối đa",
-    "key_difference": "Sự khác biệt chiến thuật cốt lõi quyết định tính chất trận đấu"
+    "possession_battle": "Detailed comment on possession battle",
+    "pressing_duel": "Compare pressing intensity and efficiency of 2 teams based on data",
+    "space_usage": "Analyze how 2 teams exploit space, based on zone distribution",
+    "physical_comparison": "Physical comparison: total distance, avg speed, max speed",
+    "key_difference": "Core tactical difference that decided the match"
   },
   "key_players": [
     {
-      "team": "Đội 1 hoặc Đội 2",
-      "player_id": "ID cầu thủ",
-      "role": "Vai trò chiến thuật",
-      "highlight": "Nhận xét ngắn về cầu thủ này dựa trên số liệu"
+      "team": "Team 1 or Team 2",
+      "player_id": "Player ID",
+      "role": "Tactical role",
+      "highlight": "Short comment on this player based on data"
     }
   ],
-  "conclusion": "Kết luận tổng quan 3-4 câu về chiến thuật và diễn biến trận đấu"
+  "conclusion": "Overall conclusion in 3-4 sentences about tactics and match progression"
 }"""
 
     def __init__(self, match_stats: dict[str, Any]):
@@ -66,7 +66,7 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
             return cls(json.load(f))
 
     def build(self) -> tuple[str, str]:
-        """Trả về (system_prompt, user_prompt)."""
+        """Returns (system_prompt, user_prompt)."""
         return self.SYSTEM_PROMPT, self._build_user_prompt()
 
     # ──────────────────────────────────────────────────────────
@@ -83,31 +83,31 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
         dur_min = round(info.get("duration_seconds", 0) / 60, 1)
 
         lines = [
-            "=== DỮ LIỆU THỐNG KÊ TRẬN ĐẤU (trích xuất bằng AI Computer Vision) ===",
+            "=== MATCH STATISTICS DATA (extracted by AI Computer Vision) ===",
             "",
             f"Video       : {info.get('video_file', 'N/A')}",
-            f"Thời lượng  : {dur_min} phút  |  FPS: {info.get('fps', 24)}  |  "
-            f"Tổng frames: {info.get('total_frames', 0)}",
+            f"Duration    : {dur_min} mins  |  FPS: {info.get('fps', 24)}  |  "
+            f"Total frames: {info.get('total_frames', 0)}",
             "",
             "┌─────────────────────────────────────────┐",
-            "│           KIỂM SOÁT BÓNG                │",
+            "│              POSSESSION                 │",
             "└─────────────────────────────────────────┘",
-            f"  Đội 1: {ball.get('possession_team1_pct', 0):.1f}%",
-            f"  Đội 2: {ball.get('possession_team2_pct', 0):.1f}%",
+            f"  Team 1: {ball.get('possession_team1_pct', 0):.1f}%",
+            f"  Team 2: {ball.get('possession_team2_pct', 0):.1f}%",
             "",
         ]
 
-        for label, team in [("ĐỘI 1", t1), ("ĐỘI 2", t2)]:
+        for label, team in [("TEAM 1", t1), ("TEAM 2", t2)]:
             lines += self._format_team(label, team)
 
         lines += [
-            "=== GHI CHÚ KỸ THUẬT ===",
-            "- Tọa độ từ Homography (ViewTransformer): sân 68 × 23.32m (góc camera)",
-            "- Tốc độ: km/h | Quãng đường: km | Compactness: mét",
-            "- Pressing: số sự kiện cầu thủ áp sát đối phương trong vòng 5m, kéo dài ≥ 3 frame",
-            "- Formation: phân tích snapshot vị trí mỗi giây",
+            "=== TECHNICAL NOTES ===",
+            "- Coordinates from Homography (ViewTransformer): pitch 68 x 23.32m (camera angle)",
+            "- Speed: km/h | Distance: km | Compactness: meters",
+            "- Pressing: event of player closing down opponent within 5m, lasting >= 3 frames",
+            "- Formation: analyze position snapshot every second",
             "",
-            "Hãy viết báo cáo phân tích chiến thuật theo đúng định dạng JSON đã chỉ định.",
+            "Please write the tactical analysis report strictly in the specified JSON format.",
         ]
 
         return "\n".join(lines)
@@ -115,11 +115,11 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
     @staticmethod
     def _format_formation_history(raw: list) -> str:
         """
-        formation_history có thể là:
+        formation_history can be:
           - list[str]:  ["4-3-3", "4-4-2"]
           - list[dict]: [{"window_index":0, "formation":"4-3-3", ...}, ...]
-          - rỗng / None
-        Trả về string "4-3-3 → 4-4-2" hoặc "N/A".
+          - empty / None
+        Returns string "4-3-3 → 4-4-2" or "N/A".
         """
         if not raw:
             return "N/A"
@@ -131,7 +131,7 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
 
     def _format_team(self, label: str, team: dict) -> list[str]:
         if not team:
-            return [f"  [{label}]: Không có dữ liệu\n"]
+            return [f"  [{label}]: No data\n"]
 
         zone    = team.get("zone_distribution", {})
         players = team.get("players", {})
@@ -140,14 +140,14 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
             team.get("formation_history", [])
         )
 
-        # Top 3 cầu thủ theo quãng đường
+        # Top 3 players by distance
         top3 = sorted(
             players.items(),
             key=lambda x: x[1].get("distance_km", 0),
             reverse=True,
         )[:3]
 
-        # Cầu thủ nhiều touches nhất
+        # Player with most touches
         top_touch = sorted(
             players.items(),
             key=lambda x: x[1].get("ball_touches", 0),
@@ -158,23 +158,23 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
             "┌─────────────────────────────────────────┐",
             f"│  {label:^39}│",
             "└─────────────────────────────────────────┘",
-            f"  Sơ đồ chủ đạo       : {team.get('dominant_formation', 'N/A')}",
-            f"  Lịch sử sơ đồ       : {formation_history_str}",
-            f"  Kiểm soát bóng      : {team.get('possession_pct', 0):.1f}%",
-            f"  Tổng quãng đường    : {team.get('total_distance_km', 0):.3f} km",
-            f"  Tốc độ trung bình   : {team.get('avg_speed_kmh', 0):.1f} km/h",
-            f"  Tốc độ tối đa       : {team.get('max_speed_kmh', 0):.1f} km/h",
-            f"  Độ compact TB       : {team.get('avg_compactness_m', 0):.1f} m",
-            f"  Số lần pressing     : {team.get('pressing_events', 0)}",
-            f"  Phân bố zone        :",
-            f"    • Phòng thủ       : {zone.get('defensive', 0):.1f}%",
-            f"    • Giữa sân        : {zone.get('middle', 0):.1f}%",
-            f"    • Tấn công        : {zone.get('attacking', 0):.1f}%",
-            f"  Số cầu thủ tracking : {len(players)}",
+            f"  Dominant formation  : {team.get('dominant_formation', 'N/A')}",
+            f"  Formation history   : {formation_history_str}",
+            f"  Possession          : {team.get('possession_pct', 0):.1f}%",
+            f"  Total distance      : {team.get('total_distance_km', 0):.3f} km",
+            f"  Average speed       : {team.get('avg_speed_kmh', 0):.1f} km/h",
+            f"  Max speed           : {team.get('max_speed_kmh', 0):.1f} km/h",
+            f"  Avg compactness     : {team.get('avg_compactness_m', 0):.1f} m",
+            f"  Pressing events     : {team.get('pressing_events', 0)}",
+            f"  Zone distribution   :",
+            f"    • Defensive       : {zone.get('defensive', 0):.1f}%",
+            f"    • Middle          : {zone.get('middle', 0):.1f}%",
+            f"    • Attacking       : {zone.get('attacking', 0):.1f}%",
+            f"  Tracked players     : {len(players)}",
         ]
 
         if top3:
-            lines.append("  Top 3 cầu thủ (quãng đường):")
+            lines.append("  Top 3 players (distance):")
             for pid, ps in top3:
                 lines.append(
                     f"    • #{pid}: {ps.get('distance_km', 0):.3f} km | "
@@ -186,7 +186,7 @@ Trả lời DUY NHẤT dưới dạng JSON hợp lệ với cấu trúc sau (kh�
         if top_touch and top_touch[0][1].get("ball_touches", 0) > 0:
             pid, ps = top_touch[0]
             lines.append(
-                f"  Cầu thủ nhiều touches nhất: #{pid} "
+                f"  Player with most touches: #{pid} "
                 f"({ps.get('ball_touches', 0)} touches)"
             )
 
