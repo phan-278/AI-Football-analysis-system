@@ -15,11 +15,11 @@ datasets/
 # Python cache
 __pycache__/
 *.pyc
-
+.venv/
 # Virtual environment
 venv/
 .env/
-
+.env
 # OS files
 .DS_Store
 Thumbs.db
@@ -30,4 +30,5 @@ inputvideo/
 output_video/
 models/
 test/
-.antigravityignore
+.antigravityignore
+outputs/
